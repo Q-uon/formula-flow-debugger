@@ -1,0 +1,17 @@
+{
+  "name": "formula-flow-debugger",
+  "version": "0.6.0",
+  "private": true,
+  "type": "module",
+  "description": "Excel数式の参照関係・実値・丸め候補を可視化するOffice Add-in MVP",
+  "scripts": {
+    "start": "python server.py",
+    "test": "node --test",
+    "test:python": "python -m unittest discover -s tests -p test_*.py",
+    "build:pages": "python tools/build_pages.py"
+  },
+  "engines": {
+    "node": ">=18",
+    "python": ">=3.10"
+  }
+}
