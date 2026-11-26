@@ -1,0 +1,59 @@
+name: Deploy Formula Flow Debugger v0.6 to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Determine GitHub Pages base URL
+        id: pages-url
+        shell: bash
+        run: |
+          OWNER="${GITHUB_REPOSITORY_OWNER}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          if [ "$REPO" = "$OWNER.github.io" ]; then
+            BASE_URL="https://$OWNER.github.io"
+          else
+            BASE_URL="https://$OWNER.github.io/$REPO"
+          fi
+          echo "base_url=$BASE_URL" >> "$GITHUB_OUTPUT"
+      - name: Run JavaScript regression tests
+        run: node --test
+      - name: Run Python tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Build static distribution
+        run: python3 tools/build_pages.py --base-url "${{ steps.pages-url.outputs.base_url }}" --build-id "${GITHUB_SHA::7}"
+      - name: Validate production bundle syntax
+        run: node --check dist/assets/app.bundle.min.js
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
